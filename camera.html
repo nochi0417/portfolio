@@ -1,0 +1,81 @@
+<!-- camera.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>撮影ページ</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <header>
+    <h1>名画を再現しよう</h1>
+    <a href="index.html">トップへ戻る</a>
+  </header>
+  <main>
+    <div id="selected-artwork">
+      <h2 id="title">タイトル</h2>
+      <img id="reference-image" src="" alt="参考画像" />
+    </div>
+
+    <div id="camera-area">
+      <video id="camera" autoplay playsinline></video>
+      <button id="switchCamera">カメラ切替</button>
+      <button id="takePhoto">📸 撮影</button>
+    </div>
+
+    <canvas id="canvas" style="display:none;"></canvas>
+    <img id="capturedPhoto" alt="撮影結果" style="max-width:100%; display:none;" />
+  </main>
+
+  <script>
+    // URLから絵画情報を取得
+    const params = new URLSearchParams(location.search);
+    const title = params.get('title');
+    const image = params.get('image');
+    document.getElementById('title').textContent = title;
+    document.getElementById('reference-image').src = 'images/' + image;
+
+    // カメラ起動処理
+    let currentStream;
+    let currentFacingMode = "user"; // "environment" for back camera
+    const video = document.getElementById('camera');
+
+    async function startCamera() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+
+      const constraints = {
+        video: { facingMode: currentFacingMode }
+      };
+      try {
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = currentStream;
+      } catch (err) {
+        alert("カメラにアクセスできません: " + err.message);
+      }
+    }
+
+    document.getElementById('switchCamera').addEventListener('click', () => {
+      currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+      startCamera();
+    });
+
+    startCamera();
+
+    // 撮影処理
+    document.getElementById('takePhoto').addEventListener('click', () => {
+      const canvas = document.getElementById('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const photoData = canvas.toDataURL('image/png');
+      const img = document.getElementById('capturedPhoto');
+      img.src = photoData;
+      img.style.display = 'block';
+    });
+  </script>
+</body>
+</html>
